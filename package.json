@@ -1,0 +1,66 @@
+{
+  "name": "pg-gapless",
+  "version": "0.1.0",
+  "description": "Gapless document numbers in PostgreSQL, safe under retries and rollbacks",
+  "keywords": [
+    "postgresql",
+    "postgres",
+    "pg",
+    "invoice",
+    "invoice-number",
+    "sequence",
+    "gapless",
+    "numbering"
+  ],
+  "homepage": "https://mnevfel.com/snippets/gapless-invoice-numbering-postgresql/",
+  "bugs": {
+    "url": "https://github.com/mnevfel/pg-gapless/issues"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Mustafa Nevfel",
+    "url": "https://mnevfel.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mnevfel/pg-gapless.git"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./schema.sql": "./sql/schema.sql"
+  },
+  "types": "./src/index.d.ts",
+  "files": [
+    "src",
+    "sql"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "types": "tsc --noEmit --strict --module nodenext --moduleResolution nodenext --target es2022 test/types.ts",
+    "mutate": "node scripts/mutate.js",
+    "schema": "node scripts/schema.js",
+    "prepublishOnly": "npm run types && npm test"
+  },
+  "peerDependencies": {
+    "pg": "^8.8.0",
+    "@types/pg": "^8.6.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/pg": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "pg": "^8.13.0",
+    "typescript": "^7.0.2"
+  }
+}
