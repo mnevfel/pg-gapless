@@ -112,6 +112,7 @@ The tests run against a real PostgreSQL:
 - Formatting (prefix, padding, the year) is yours to do. Store the integer.
 - Deleting a committed document leaves a gap. Cancel or credit it instead.
 - Whether a series has to be gapless depends on the jurisdiction. That is usually your accountant's call, and a plain sequence is simpler where gaps are allowed.
+- Tested in CI on Node 22 and 24 with PostgreSQL 15, 17 and 18, and with pg 8.8.0 as the oldest driver. Not tested on PostgreSQL 14 or older, or through a connection pooler in transaction mode.
 
 ## Development
 
