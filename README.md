@@ -1,6 +1,6 @@
 # pg-gapless
 
-Gapless document numbers in PostgreSQL for Node.js: invoice and receipt numbers that never skip, even when a transaction fails or a request is retried. No runtime dependencies; `pg` is a peer.
+Gapless (gap-free) sequential document numbers in PostgreSQL for Node.js: invoice and receipt numbers that never skip, even when a transaction fails or a request is retried. ESM only, Node 22 or newer. No runtime dependencies; `pg` is a peer.
 
 ## Quick start
 
@@ -77,23 +77,23 @@ The tests run against a real PostgreSQL:
 - When every fifth of 40 concurrent issuers fails, the 32 stored documents are numbered 1 to 32.
 - A second issuer on a series waits for the first to commit, then gets the next number.
 - A function that throws, a query error it catches, a COMMIT that fails and a connection that drops all leave the counter where it was.
-- A retried request with the same idempotency key fails with 23505 and uses no number.
+- A retried request with the same request key fails with 23505 and uses no number.
 - Under REPEATABLE READ and SERIALIZABLE the waiting issuer fails with 40001. With SERIALIZABLE as the session default, `issue()` still waits its turn.
 - `now()` runs backwards across numbers and `clock_timestamp()` does not.
 - `peek()` reads a series that another transaction holds without waiting.
 - The Quick start above prints what it says.
 
-`npm run mutate` then breaks the library one guard at a time, such as the explicit READ COMMITTED, the ROLLBACK, the COMMIT check and the error listener, and fails if the tests miss any of them. CI runs it on every push.
+`npm run mutate` then breaks the library one guard at a time, such as the explicit READ COMMITTED, the ROLLBACK, the COMMIT check and the error listener, and fails if the tests miss any of them. CI runs it on every push to main and on every pull request.
 
 ## API
 
 | Function | Returns |
 |---|---|
-| `install(db)` | Creates the table if it is missing and creates or replaces `gapless_next()`. Run it from a migration, not from every process at start-up, since two installs at once can collide. The same SQL is in `sql/schema.sql`, exported as `schemaSql` and as `pg-gapless/schema.sql` for migration tools. |
+| `install(db)` | Creates the table if it is missing and creates or replaces `gapless_next()`. Run it from a migration, not from every process at start-up, since two installs at once can collide. The same SQL is in `sql/schema.sql`, exported as `schemaSql` and as `pg-gapless/schema.sql` for migration tools. Both are created in the first schema of the `search_path`. |
 | `createSeries(db, { scope, series, startAt = 1 })` | `true` if created, `false` if the series existed. An existing series is never changed. |
 | `issue(pool, { scope, series }, fn)` | What `fn(client, number)` returns. |
-| `nextNumber(client, { scope, series })` | The next number, for code that runs its own transaction. Call it after `BEGIN` on the same client. |
-| `peek(db, { scope, series })` | The last number handed out, or `null` if the series does not exist. Takes no lock. |
+| `nextNumber(client, { scope, series })` | The next number, for code that runs its own transaction. Call it after `BEGIN` on the same client; outside a transaction the increment commits at once and a later failure leaves a gap. |
+| `peek(db, { scope, series })` | The last number handed out (`startAt - 1`, so 0 by default, before the first one), or `null` if the series does not exist. Takes no lock. |
 | `isUniqueViolation(err, constraint?)` | `true` for a 23505 error, optionally on one constraint. |
 | `SeriesNotFoundError` | Thrown for an unknown series; `err.code` is `GAPLESS_SERIES_NOT_FOUND`. |
 | `TransactionAbortedError` | Thrown by `issue()` when `fn` caught a failed query, so nothing was committed; `err.code` is `GAPLESS_TX_ABORTED`. |

@@ -10,9 +10,13 @@
     "invoice-number",
     "sequence",
     "gapless",
+    "gap-free",
+    "node-postgres",
+    "document-number",
+    "sequential-numbers",
     "numbering"
   ],
-  "homepage": "https://mnevfel.com/snippets/gapless-invoice-numbering-postgresql/",
+  "homepage": "https://github.com/mnevfel/pg-gapless#readme",
   "bugs": {
     "url": "https://github.com/mnevfel/pg-gapless/issues"
   },

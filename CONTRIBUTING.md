@@ -14,6 +14,4 @@ Pull requests:
 - A change to `src/index.js` keeps `npm run mutate` green. A new guard gets a new mutant in `scripts/mutate.js`.
 - Follow the style of the code around your change.
 
-Issues are read in batches, usually within a week. A single reminder after two weeks is fine.
-
 Contributions are released under the repository's MIT license.
