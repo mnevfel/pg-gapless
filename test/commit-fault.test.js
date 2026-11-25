@@ -48,7 +48,7 @@ test('a connection cut before COMMIT arrives rejects the call and gives the numb
 })
 
 test('a COMMIT that succeeds but is never answered stores the document, and the request key makes the retry safe', async () => {
-  const key = { scope: 'tenant-x', series: 'after' }
+  const key = { scope: 'tenant-y', series: 'after' }
   await createSeries(db.pool, key)
   const store = (requestId) => (client, n) => insertDocument(client, key, n, requestId).then(() => n)
   const before = proxy.cuts
