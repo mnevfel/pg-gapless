@@ -77,6 +77,7 @@ The tests run against a real PostgreSQL:
 - When every fifth of 40 concurrent issuers fails, the 32 stored documents are numbered 1 to 32.
 - A second issuer on a series waits for the first to commit, then gets the next number.
 - A function that throws, a query error it catches, a COMMIT that fails and a connection that drops all leave the counter where it was.
+- A connection cut just before COMMIT arrives leaves the counter where it was. A connection cut after the server committed rejects the call although the document is stored; the retry with the same request key then fails with 23505, uses no number, and the next request carries on without a gap. A small TCP proxy in the tests makes both cuts.
 - A retried request with the same request key fails with 23505 and uses no number.
 - Under REPEATABLE READ and SERIALIZABLE the waiting issuer fails with 40001. With SERIALIZABLE as the session default, `issue()` still waits its turn.
 - `now()` runs backwards across numbers and `clock_timestamp()` does not.
@@ -124,7 +125,7 @@ npm run types
 npm run mutate
 ```
 
-The tests create and drop their own schemas in that database. After editing `sql/schema.sql`, run `npm run schema`.
+The tests create and drop their own schemas in that database, and they reach it over plain TCP, so leave `sslmode` out of `DATABASE_URL`. After editing `sql/schema.sql`, run `npm run schema`.
 
 ## License
 

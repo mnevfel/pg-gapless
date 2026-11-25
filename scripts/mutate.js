@@ -7,7 +7,8 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const tests = ['test/issue.test.js', 'test/isolation.test.js', 'test/failure.test.js', 'test/readme.test.js']
+const tests = ['test/issue.test.js', 'test/isolation.test.js', 'test/failure.test.js', 'test/commit-fault.test.js',
+  'test/readme.test.js']
 
 const mutants = [
   ['transaction at the session default level', 'src/index.js',
@@ -16,6 +17,8 @@ const mutants = [
     "await client.query('ROLLBACK')", ''],
   ['COMMIT answered with ROLLBACK passes as success', 'src/index.js',
     "done.command === 'ROLLBACK'", 'false'],
+  ['a COMMIT that fails is reported as success', 'src/index.js',
+    "done = await client.query('COMMIT')", "done = await client.query('COMMIT').catch(() => ({ command: 'COMMIT' }))"],
   ['no error listener on the checked-out client', 'src/index.js',
     "client.on('error', onError)", ''],
   ['issue() connects before checking its arguments', 'src/index.js',

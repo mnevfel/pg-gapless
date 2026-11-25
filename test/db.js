@@ -12,8 +12,8 @@ export async function setup() {
   await admin.connect()
   await admin.query(`CREATE SCHEMA ${schema}`)
   const pools = []
-  const pool = (options = '', max = 10) => {
-    const p = new pg.Pool({ connectionString: url, max, options: `-c search_path=${schema} ${options}` })
+  const pool = (options = '', max = 10, connectionString = url) => {
+    const p = new pg.Pool({ connectionString, max, options: `-c search_path=${schema} ${options}` })
     pools.push(p)
     return p
   }
