@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const tests = ['test/issue.test.js', 'test/isolation.test.js', 'test/failure.test.js', 'test/commit-fault.test.js',
-  'test/readme.test.js']
+  'test/deadlock.test.js', 'test/readme.test.js']
 
 const mutants = [
   ['transaction at the session default level', 'src/index.js',

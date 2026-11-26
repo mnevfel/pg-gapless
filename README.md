@@ -78,6 +78,7 @@ The tests run against a real PostgreSQL:
 - A second issuer on a series waits for the first to commit, then gets the next number.
 - A function that throws, a query error it catches, a COMMIT that fails and a connection that drops all leave the counter where it was.
 - A connection cut just before COMMIT arrives leaves the counter where it was. A connection cut after the server committed rejects the call although the document is stored; the retry with the same request key then fails with 23505, uses no number, and the next request carries on without a gap. A small TCP proxy in the tests makes both cuts.
+- Two transactions that take two series in opposite order deadlock, and one of them fails with 40P01. The survivor commits, the loser's numbers are given back, and its retry takes the next numbers with no gap. Two transactions that take the series in the same order never deadlock.
 - A retried request with the same request key fails with 23505 and uses no number.
 - Under REPEATABLE READ and SERIALIZABLE the waiting issuer fails with 40001. With SERIALIZABLE as the session default, `issue()` still waits its turn.
 - `now()` runs backwards across numbers and `clock_timestamp()` does not.

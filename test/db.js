@@ -67,3 +67,17 @@ export async function terminate(pool, client) {
   const { rows } = await client.query('SELECT pg_backend_pid() AS pid')
   await pool.query('SELECT pg_terminate_backend($1)', [rows[0].pid])
 }
+
+export async function backendPid(client) {
+  const { rows } = await client.query('SELECT pg_backend_pid() AS pid')
+  return rows[0].pid
+}
+
+// Waits until the session with pid waiter is blocked by the session with pid holder,
+// as the server itself reports it, so a test never has to guess with a sleep.
+export function waitUntilBlocked(pool, waiter, holder) {
+  return waitFor(async () => {
+    const { rows } = await pool.query('SELECT $2 = ANY (pg_blocking_pids($1)) AS blocked', [waiter, holder])
+    return rows[0].blocked
+  })
+}
