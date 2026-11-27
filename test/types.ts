@@ -22,6 +22,7 @@ export async function check(): Promise<void> {
     await client.query('INSERT INTO invoices (number) VALUES ($1)', [number])
     return `INV-${number}`
   })
+  const limited: number = await issue(pool, key, async (_client, number: number) => number, { lockTimeout: 5000 })
   const client = await pool.connect()
   const n: number = await nextNumber(client, key)
   client.release()
@@ -41,9 +42,11 @@ export async function check(): Promise<void> {
 
   // @ts-expect-error issue() needs a pool, not a client
   await issue(client, key, async () => 0)
+  // @ts-expect-error lockTimeout is a number of milliseconds
+  await issue(pool, key, async () => 0, { lockTimeout: '5s' })
   // @ts-expect-error scope and series are both required
   await peek(pool, { scope: 'acme' })
   // @ts-expect-error fn receives a number
   await issue(pool, key, async (_client, number: string) => number)
-  void [created, id, n, last, sql]
+  void [created, id, limited, n, last, sql]
 }

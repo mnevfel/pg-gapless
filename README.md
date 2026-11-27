@@ -80,6 +80,7 @@ The tests run against a real PostgreSQL:
 - A connection cut just before COMMIT arrives leaves the counter where it was. A connection cut after the server committed rejects the call although the document is stored; the retry with the same request key then fails with 23505, uses no number, and the next request carries on without a gap. A small TCP proxy in the tests makes both cuts.
 - Two transactions that take two series in opposite order deadlock, and one of them fails with 40P01. The survivor commits, the loser's numbers are given back, and its retry takes the next numbers with no gap. Two transactions that take the series in the same order never deadlock.
 - A retried request with the same request key fails with 23505 and uses no number.
+- With `lockTimeout`, a waiter behind a transaction that holds the series row fails with 55P03 while the server reports it as blocked, its connection goes back to the pool, `fn` never runs, the counter is unchanged and the next issuer gets the next number. The limit ends with its transaction, `0` switches it off, and a bad value is rejected before any connection is taken.
 - Under REPEATABLE READ and SERIALIZABLE the waiting issuer fails with 40001. With SERIALIZABLE as the session default, `issue()` still waits its turn.
 - `now()` runs backwards across numbers and `clock_timestamp()` does not.
 - `peek()` reads a series that another transaction holds without waiting.
@@ -93,7 +94,7 @@ The tests run against a real PostgreSQL:
 |---|---|
 | `install(db)` | Creates the table if it is missing and creates or replaces `gapless_next()`. Run it from a migration, not from every process at start-up, since two installs at once can collide. The same SQL is in `sql/schema.sql`, exported as `schemaSql` and as `pg-gapless/schema.sql` for migration tools. Both are created in the first schema of the `search_path`. |
 | `createSeries(db, { scope, series, startAt = 1 })` | `true` if created, `false` if the series existed. An existing series is never changed. |
-| `issue(pool, { scope, series }, fn)` | What `fn(client, number)` returns. |
+| `issue(pool, { scope, series }, fn, { lockTimeout }?)` | What `fn(client, number)` returns. `lockTimeout` is optional, in whole milliseconds from 0 to 2147483647: a lock wait inside this transaction, the wait for the series row included, that lasts longer fails with SQLSTATE 55P03, the transaction rolls back and the connection goes back to the pool. It lasts for this transaction only; `0` means no limit and overrides the session's `lock_timeout`. Anything else is a `RangeError` before a connection is taken. |
 | `nextNumber(client, { scope, series })` | The next number, for code that runs its own transaction. Call it after `BEGIN` on the same client; outside a transaction the increment commits at once and a later failure leaves a gap. |
 | `peek(db, { scope, series })` | The last number handed out (`startAt - 1`, so 0 by default, before the first one), or `null` if the series does not exist. Takes no lock. |
 | `isUniqueViolation(err, constraint?)` | `true` for a 23505 error, optionally on one constraint. |
@@ -108,7 +109,7 @@ The tests run against a real PostgreSQL:
 - `fn` must run its queries on the client it is given and leave COMMIT and ROLLBACK to `issue()`. A `pool.query()` inside `fn` needs a second connection, and with the pool full of waiting issuers it never gets one.
 - A failed query inside `fn` aborts the transaction. To recover from one and keep the number, run it inside a `SAVEPOINT`.
 - A transaction that takes numbers from several series must take them in the same order every time, or two of them can deadlock (40P01).
-- A session left idle inside a transaction holds its series until it ends. Set `idle_in_transaction_session_timeout` and `lock_timeout` for the role that issues numbers.
+- A session left idle inside a transaction holds its series until it ends. Set `idle_in_transaction_session_timeout` for the role that issues numbers, and give `issue()` a `lockTimeout` (or set `lock_timeout` for the role) so a waiter behind a stuck issuer fails with 55P03 instead of waiting forever.
 - With asynchronous replication, a failover can lose the last commits, so numbers already sent to customers can be issued again. Where that matters, issue numbers with synchronous replication.
 - Numbers are JavaScript numbers. A counter above `Number.MAX_SAFE_INTEGER` throws.
 - Formatting (prefix, padding, the year) is yours to do. Store the integer.

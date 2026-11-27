@@ -33,8 +33,13 @@ export declare function createSeries(db: Queryable, key: SeriesKey & { startAt?:
 /** Takes the next number. Call it inside an open transaction; the number returns to the series if that transaction rolls back. */
 export declare function nextNumber(client: Queryable, key: SeriesKey): Promise<number>
 
+export interface IssueOptions {
+  /** Milliseconds a lock wait may last inside this transaction, from 0 to 2147483647 (0 means no limit). Applies to fn's queries too. When it runs out the call rejects with SQLSTATE 55P03 and the connection goes back to the pool. Left out, the session's lock_timeout applies. */
+  lockTimeout?: number
+}
+
 /** Runs fn in a READ COMMITTED transaction with the next number of the series. Commits when fn resolves, rolls back and rethrows when it rejects. fn must run its queries on the client it is given. */
-export declare function issue<T>(pool: Pool, key: SeriesKey, fn: (client: PoolClient, number: number) => Promise<T>): Promise<T>
+export declare function issue<T>(pool: Pool, key: SeriesKey, fn: (client: PoolClient, number: number) => Promise<T>, options?: IssueOptions): Promise<T>
 
 /** The last number handed out, or null if the series does not exist. Takes no lock. */
 export declare function peek(db: Queryable, key: SeriesKey): Promise<number | null>

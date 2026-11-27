@@ -58,12 +58,22 @@ export async function nextNumber(client, key) {
   return toNumber(res.rows[0].n)
 }
 
-export async function issue(pool, key, fn) {
+// The largest value PostgreSQL accepts for lock_timeout, in milliseconds.
+const MAX_LOCK_TIMEOUT = 2147483647
+
+export async function issue(pool, key, fn, options) {
   if (typeof pool?.connect !== 'function') {
     throw new TypeError('issue() needs a pg Pool; inside your own transaction use nextNumber()')
   }
   const { scope, series } = checkKey(key)
   if (typeof fn !== 'function') throw new TypeError('issue() needs a function that stores the document')
+  if (options !== undefined && (typeof options !== 'object' || options === null)) {
+    throw new TypeError('issue() options must be an object such as { lockTimeout: 5000 }')
+  }
+  const { lockTimeout } = options ?? {}
+  if (lockTimeout !== undefined && !(Number.isInteger(lockTimeout) && lockTimeout >= 0 && lockTimeout <= MAX_LOCK_TIMEOUT)) {
+    throw new RangeError(`lockTimeout must be an integer number of milliseconds from 0 to ${MAX_LOCK_TIMEOUT}`)
+  }
 
   const client = await pool.connect()
   let broken = false
@@ -79,6 +89,10 @@ export async function issue(pool, key, fn) {
       // Explicit READ COMMITTED: under REPEATABLE READ or SERIALIZABLE the
       // second issuer on a series fails with 40001 instead of waiting its turn.
       await client.query('BEGIN ISOLATION LEVEL READ COMMITTED')
+      // SET LOCAL takes no parameter; set_config(..., true) is the same thing and ends with the transaction.
+      if (lockTimeout !== undefined) {
+        await client.query("SELECT set_config('lock_timeout', $1, true)", [String(lockTimeout)])
+      }
       const number = await nextNumber(client, key)
       result = await fn(client, number)
       done = await client.query('COMMIT')

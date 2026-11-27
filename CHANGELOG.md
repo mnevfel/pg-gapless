@@ -2,6 +2,10 @@
 
 Versions follow semantic versioning. Dates are ISO dates.
 
+## Unreleased
+
+- `issue(pool, key, fn, { lockTimeout })`: a waiter behind a stuck issuer now fails with SQLSTATE 55P03 after `lockTimeout` milliseconds and gives its connection back, instead of waiting forever. Without the option nothing changes.
+
 ## 0.1.0 (2026-11-13)
 
 - `issue()`, `nextNumber()`, `createSeries()`, `peek()` and `install()`: gapless numbers per scope and series on a counter row, given back on rollback.

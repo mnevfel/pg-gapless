@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const tests = ['test/issue.test.js', 'test/isolation.test.js', 'test/failure.test.js', 'test/commit-fault.test.js',
-  'test/deadlock.test.js', 'test/readme.test.js']
+  'test/deadlock.test.js', 'test/lock-timeout.test.js', 'test/readme.test.js']
 
 const mutants = [
   ['transaction at the session default level', 'src/index.js',
@@ -36,6 +36,12 @@ const mutants = [
     "COMMENT ON TABLE gapless_counters IS 'pg-gapless schema 1';", ''],
   ['error listener left on the client', 'src/index.js',
     "client.off('error', onError)", ''],
+  ['lockTimeout is never applied', 'src/index.js',
+    'if (lockTimeout !== undefined) {', 'if (false) {'],
+  ['lockTimeout outlives its transaction', 'src/index.js',
+    "set_config('lock_timeout', $1, true)", "set_config('lock_timeout', $1, false)"],
+  ['lockTimeout accepts a negative number', 'src/index.js',
+    'lockTimeout >= 0 && ', ''],
   ['peek() locks the row', 'src/index.js',
     "WHERE scope = $1 AND series = $2',", "WHERE scope = $1 AND series = $2 FOR UPDATE',"],
   ['peek() gives 0 for an unknown series', 'src/index.js',
