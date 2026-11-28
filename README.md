@@ -84,6 +84,7 @@ The tests run against a real PostgreSQL:
 - Under REPEATABLE READ and SERIALIZABLE the waiting issuer fails with 40001. With SERIALIZABLE as the session default, `issue()` still waits its turn.
 - `now()` runs backwards across numbers and `clock_timestamp()` does not.
 - `peek()` reads a series that another transaction holds without waiting.
+- Five `install()` calls at once on an empty schema all succeed, ten schemas in a row, and `install()` waits while another session holds the advisory lock it documents.
 - The Quick start above prints what it says.
 
 `npm run mutate` then breaks the library one guard at a time, such as the explicit READ COMMITTED, the ROLLBACK, the COMMIT check and the error listener, and fails if the tests miss any of them. CI runs it on every push to main and on every pull request.
@@ -92,7 +93,7 @@ The tests run against a real PostgreSQL:
 
 | Function | Returns |
 |---|---|
-| `install(db)` | Creates the table if it is missing and creates or replaces `gapless_next()`. Run it from a migration, not from every process at start-up, since two installs at once can collide. The same SQL is in `sql/schema.sql`, exported as `schemaSql` and as `pg-gapless/schema.sql` for migration tools. Both are created in the first schema of the `search_path`. |
+| `install(db)` | Creates the table if it is missing and creates or replaces `gapless_next()`. Safe to run from several processes at once: it takes the advisory lock `pg_advisory_xact_lock(8099547352470154355)` first, so a second install waits for the first, and the lock ends with the install's transaction. The same SQL is in `sql/schema.sql`, exported as `schemaSql` and as `pg-gapless/schema.sql` for migration tools. Both are created in the first schema of the `search_path`. The exported SQL has no lock of its own: a migration tool that may run two copies at once needs its own. |
 | `createSeries(db, { scope, series, startAt = 1 })` | `true` if created, `false` if the series existed. An existing series is never changed. |
 | `issue(pool, { scope, series }, fn, { lockTimeout }?)` | What `fn(client, number)` returns. `lockTimeout` is optional, in whole milliseconds from 0 to 2147483647: a lock wait inside this transaction, the wait for the series row included, that lasts longer fails with SQLSTATE 55P03, the transaction rolls back and the connection goes back to the pool. It lasts for this transaction only; `0` means no limit and overrides the session's `lock_timeout`. Anything else is a `RangeError` before a connection is taken. |
 | `nextNumber(client, { scope, series })` | The next number, for code that runs its own transaction. Call it after `BEGIN` on the same client; outside a transaction the increment commits at once and a later failure leaves a gap. |

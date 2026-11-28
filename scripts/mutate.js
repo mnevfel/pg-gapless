@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const tests = ['test/issue.test.js', 'test/isolation.test.js', 'test/failure.test.js', 'test/commit-fault.test.js',
-  'test/deadlock.test.js', 'test/lock-timeout.test.js', 'test/readme.test.js']
+  'test/deadlock.test.js', 'test/lock-timeout.test.js', 'test/install.test.js', 'test/readme.test.js']
 
 const mutants = [
   ['transaction at the session default level', 'src/index.js',
@@ -46,6 +46,8 @@ const mutants = [
     "WHERE scope = $1 AND series = $2',", "WHERE scope = $1 AND series = $2 FOR UPDATE',"],
   ['peek() gives 0 for an unknown series', 'src/index.js',
     'res.rowCount === 0 ? null :', 'res.rowCount === 0 ? 0 :'],
+  ['install() takes no advisory lock', 'src/index.js',
+    "const installLock = 'SELECT pg_advisory_xact_lock(8099547352470154355);\\n'", "const installLock = ''"],
   ['isUniqueViolation() accepts any error code', 'src/index.js',
     "err?.code === '23505'", 'err?.code'],
 ]

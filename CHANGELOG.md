@@ -4,6 +4,7 @@ Versions follow semantic versioning. Dates are ISO dates.
 
 ## Unreleased
 
+- `install()` no longer fails when two run at once on an empty schema (duplicate key on `pg_type_typname_nsp_index`): it takes `pg_advisory_xact_lock(8099547352470154355)` first, so the second install waits.
 - `issue(pool, key, fn, { lockTimeout })`: a waiter behind a stuck issuer now fails with SQLSTATE 55P03 after `lockTimeout` milliseconds and gives its connection back, instead of waiting forever. Without the option nothing changes.
 
 ## 0.1.0 (2026-11-13)

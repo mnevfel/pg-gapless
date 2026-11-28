@@ -22,8 +22,15 @@ export class TransactionAbortedError extends Error {
   }
 }
 
+// Two installs at once on an empty schema collide in the system catalogs: CREATE TABLE IF NOT EXISTS
+// does not stop the second one, which fails with a duplicate key on pg_type_typname_nsp_index.
+// The advisory lock makes the second install wait until the first has committed.
+// The key is the ASCII bytes of "pg_gapls". The statements go out as one multi-statement query,
+// which the server runs as one transaction, so the lock is released when the install ends.
+const installLock = 'SELECT pg_advisory_xact_lock(8099547352470154355);\n'
+
 export async function install(db) {
-  await db.query(schemaSql)
+  await db.query(installLock + schemaSql)
 }
 
 export async function createSeries(db, key) {
